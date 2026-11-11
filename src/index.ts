@@ -15,33 +15,49 @@ const routes: ReadonlyArray<{ prefix: string; service: ServiceName }> = [
 ];
 
 function findRoute(pathname: string) {
-  return routes.find(({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  return routes.find(
+    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 }
 
-function sendJson(response: ServerResponse, statusCode: number, body: object): void {
+function sendJson(
+  response: ServerResponse,
+  statusCode: number,
+  body: object,
+): void {
   response.writeHead(statusCode, { "content-type": "application/json" });
   response.end(JSON.stringify(body));
 }
 
-function proxy(request: IncomingMessage, response: ServerResponse, target: URL): void {
+function proxy(
+  request: IncomingMessage,
+  response: ServerResponse,
+  target: URL,
+): void {
   const transport = target.protocol === "https:" ? https : http;
-  const upstreamRequest = transport.request({
-    protocol: target.protocol,
-    hostname: target.hostname,
-    port: target.port || undefined,
-    method: request.method,
-    path: request.url,
-    headers: {
-      ...request.headers,
-      host: target.host,
-      "x-forwarded-host": request.headers.host ?? "",
-      "x-forwarded-proto": "http",
+  const upstreamRequest = transport.request(
+    {
+      protocol: target.protocol,
+      hostname: target.hostname,
+      port: target.port || undefined,
+      method: request.method,
+      path: request.url,
+      headers: {
+        ...request.headers,
+        host: target.host,
+        "x-forwarded-host": request.headers.host ?? "",
+        "x-forwarded-proto": "http",
+      },
+      timeout: config.requestTimeoutMs,
     },
-    timeout: config.requestTimeoutMs,
-  }, (upstreamResponse) => {
-    response.writeHead(upstreamResponse.statusCode ?? 502, upstreamResponse.headers);
-    upstreamResponse.pipe(response);
-  });
+    (upstreamResponse) => {
+      response.writeHead(
+        upstreamResponse.statusCode ?? 502,
+        upstreamResponse.headers,
+      );
+      upstreamResponse.pipe(response);
+    },
+  );
 
   upstreamRequest.on("timeout", () => {
     upstreamRequest.destroy(new Error("Upstream request timed out"));
@@ -89,7 +105,7 @@ const server = http.createServer((request, response) => {
   proxy(request, response, config.services[route.service]);
 });
 
-server.listen(config.port, () => {
+server.listen(config.port, "0.0.0.0", () => {
   console.log(`Paxus API gateway listening on port ${config.port}`);
 });
 
