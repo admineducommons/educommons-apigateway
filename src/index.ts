@@ -90,11 +90,6 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  if (requestUrl.pathname === "/health") {
-    sendJson(response, 200, { status: "ok", service: "paxus-api-gateway" });
-    return;
-  }
-
   const route = findRoute(requestUrl.pathname);
   if (!route) {
     sendJson(response, 404, { message: "Gateway route not found" });
