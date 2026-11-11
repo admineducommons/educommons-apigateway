@@ -90,6 +90,13 @@ const server = http.createServer((request, response) => {
     return;
   }
 
+  if (requestUrl.pathname === "/") {
+    sendJson(response, 200, {
+      message: "EduCommons API Gateway is running",
+    });
+    return;
+  }
+
   const route = findRoute(requestUrl.pathname);
   if (!route) {
     sendJson(response, 404, { message: "Gateway route not found" });
